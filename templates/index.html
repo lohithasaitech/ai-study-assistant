@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Study Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="main">
+
+    <div class="top">
+        <h2>AI Study Assistant</h2>
+    </div>
+
+    <div id="chat"></div>
+
+    <div class="bottom">
+
+        <input type="text" id="msg" placeholder="Ask something">
+
+        <button onclick="sendMsg()">Send</button>
+
+    </div>
+
+</div>
+
+<script>
+
+async function sendMsg(){
+
+    let input = document.getElementById("msg");
+
+    let message = input.value;
+
+    if(message == ""){
+        return;
+    }
+
+    let chat = document.getElementById("chat");
+
+    chat.innerHTML += `
+        <div class="user">
+            ${message}
+        </div>
+    `;
+
+    input.value = "";
+
+    let response = await fetch("/chat", {
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+            message:message
+        })
+
+    });
+
+    let data = await response.json();
+
+    chat.innerHTML += `
+        <div class="bot">
+            ${data.reply}
+        </div>
+    `;
+
+    chat.scrollTop = chat.scrollHeight;
+}
+
+</script>
+
+</body>
+</html>
