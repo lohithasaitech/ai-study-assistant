@@ -1,54 +1,42 @@
 import os
-import requests
-from flask import Flask, send_from_directory, request, jsonify
+from flask import Flask, render_template, request, jsonify
+from openai import OpenAI
 from dotenv import load_dotenv
 
-# App setup by Lohitha Sai
 load_dotenv()
 
-app = Flask(__name__, static_folder='.', static_url_path='')
+app = Flask(__name__)
 
-# Loading credentials from .env
-API_KEY = os.getenv("API_KEY")
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
+# initialize client for lohitha's project
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-@app.route("/")
-def render_home():
-    return send_from_directory('.', 'index.html')
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-@app.route("/chat", methods=["POST"])
-def chat_logic():
-    user_text = request.json.get("message")
+@app.route('/ask', methods=['POST'])
+def ask_bot():
+    req_data = request.get_json()
+    msg = req_data.get("message")
     
-    if not user_text:
-        return jsonify({"error": "Empty text received"}), 400
+    if not msg:
+        return jsonify({"error": "empty message"}), 400
 
     try:
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model": MODEL_NAME,
-            "messages": [
-                {
-                    "role": "system", 
-                    "content": "You are a study assistant created by Lohitha Sai. Be helpful and concise."
-                },
-                {"role": "user", "content": user_text}
+        completion = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a smart AI study assistant. Help the user clear their doubts briefly and accurately."},
+                {"role": "user", "content": msg}
             ]
-        }
-        
-        req = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers)
-        data = req.json()
-        
-        reply_msg = data["choices"][0]["message"]["content"]
-        return jsonify({"reply": reply_msg})
-        
+        )
+        bot_reply = completion.choices[0].message.content
+        return jsonify({"reply": bot_reply})
+    
     except Exception as e:
-        print("Backend Error:", e)
-        return jsonify({"error": "Server issue. Please try again."}), 500
+        # logging error to console
+        print(f"Error: {e}") 
+        return jsonify({"error": "something went wrong"}), 500
 
-if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
