@@ -7,7 +7,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# initialize client for lohitha's project
+# Created by me lohithasai
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route('/')
