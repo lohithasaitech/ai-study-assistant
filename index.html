@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Lohitha Sai">
+    <title>AI Study Assistant</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <h2>Study Assistant</h2>
+        </header>
+        
+        <main class="chat-box" id="chat-area">
+            <div class="message bot-message">
+                <strong>Assistant:</strong> Hello! What should we learn today?
+            </div>
+        </main>
+        
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Ask something..." autocomplete="off">
+            <button onclick="sendData()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // Trigger enter key press
+        document.getElementById("user-input").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                sendData();
+            }
+        });
+
+        async function sendData() {
+            let inputElement = document.getElementById("user-input");
+            let text = inputElement.value.trim();
+            
+            if (text === "") return;
+
+            addMessageToUI("You", text, "user-message");
+            inputElement.value = "";
+
+            try {
+                let response = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text })
+                });
+                
+                let resData = await response.json();
+
+                if (response.ok && resData.reply) {
+                    addMessageToUI("Assistant", resData.reply, "bot-message");
+                } else {
+                    addMessageToUI("System", "Error in backend.", "error-message");
+                }
+            } catch (error) {
+                console.log("Error:", error);
+                addMessageToUI("System", "Server offline.", "error-message");
+            }
+        }
+
+        function addMessageToUI(sender, msg, className) {
+            let chatArea = document.getElementById("chat-area");
+            let div = document.createElement("div");
+            div.className = "message " + className;
+            div.innerHTML = "<strong>" + sender + ":</strong> " + msg;
+            
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight; 
+        }
+    </script>
+</body>
+</html>
