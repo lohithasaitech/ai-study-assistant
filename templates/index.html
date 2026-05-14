@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Study Assistant - Lohitha</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="wrapper">
+        <header>
+            <h1>AI Study Assistant</h1>
+            <p>Built by Lohitha</p>
+        </header>
+        
+        <div id="chat-window"></div>
+        
+        <div class="input-container">
+            <input type="text" id="user-msg" placeholder="Ask your question here...">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const userMsg = document.getElementById('user-msg');
+        const sendBtn = document.getElementById('send-btn');
+
+        // function to append chat bubbles to UI
+        const addMsg = (role, text) => {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.textContent = text;
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        };
+
+        sendBtn.addEventListener('click', async () => {
+            const text = userMsg.value.trim();
+            if (!text) return;
+
+            addMsg('user', text);
+            userMsg.value = '';
+
+            try {
+                const res = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                
+                const data = await res.json();
+                if (data.reply) {
+                    addMsg('bot', data.reply);
+                } else {
+                    addMsg('bot', 'Oops, failed to fetch response.');
+                }
+            } catch (err) {
+                console.error(err);
+                addMsg('bot', 'Server error!');
+            }
+        });
+
+        // send message when enter key is pressed
+        userMsg.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
+        });
+    </script>
+</body>
+</html>
