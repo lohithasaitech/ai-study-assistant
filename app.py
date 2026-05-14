@@ -1,49 +1,54 @@
 import os
+import requests
 from flask import Flask, send_from_directory, request, jsonify
-from openai import OpenAI
 from dotenv import load_dotenv
 
-# Developer: Lohitha Sai
-# Setting up the main server logic
+# App setup by Lohitha Sai
 load_dotenv()
 
-# Folders lekunda direct ga same directory nunchi files serve cheyyadaniki
 app = Flask(__name__, static_folder='.', static_url_path='')
 
-# Initializing OpenAI client for the study bot
-client = OpenAI(api_key=os.environ.get("API_KEY"))
+# Loading credentials from .env
+API_KEY = os.getenv("API_KEY")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
 
 @app.route("/")
-def lohitha_home():
-    """Renders the main chat interface directly from the root folder."""
-    print("Lohitha's AI assistant is running...") # Terminal lo kanipisthundi
+def render_home():
     return send_from_directory('.', 'index.html')
 
 @app.route("/chat", methods=["POST"])
-def chat_with_bot():
-    """Handles user inputs."""
-    lohitha_user_msg = request.json.get("message")
+def chat_logic():
+    user_text = request.json.get("message")
     
-    if not lohitha_user_msg:
-        return jsonify({"error": "Message is empty. Try again!"}), 400
+    if not user_text:
+        return jsonify({"error": "Empty text received"}), 400
 
     try:
-        # Calling OpenAI API
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful AI study assistant."},
-                {"role": "user", "content": lohitha_user_msg}
-            ]
-        )
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
         
-        bot_reply = response.choices[0].message.content
-        return jsonify({"reply": bot_reply})
+        payload = {
+            "model": MODEL_NAME,
+            "messages": [
+                {
+                    "role": "system", 
+                    "content": "You are a study assistant created by Lohitha Sai. Be helpful and concise."
+                },
+                {"role": "user", "content": user_text}
+            ]
+        }
+        
+        req = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers)
+        data = req.json()
+        
+        reply_msg = data["choices"][0]["message"]["content"]
+        return jsonify({"reply": reply_msg})
         
     except Exception as e:
-        # Ekkadaina thappu jarigithe ee error print avtundi
-        print(f"API connect avvatledu, Error: {e}")
-        return jsonify({"error": "Server error. Check API connection."}), 500
+        print("Backend Error:", e)
+        return jsonify({"error": "Server issue. Please try again."}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(port=5000, debug=True)
